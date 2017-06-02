@@ -1,34 +1,95 @@
-#Run this file through command line without any arguments to play a random episode
-#If you want to play a specific episode, run this file with the Season no and the episode no as the command line arguments
-#Note that this will only work if you have the episodes of each season in separate directories
+#!/usr/bin/python
 
 
-import os,sys,random,subprocess
-path="E:/Friends/" #Path of your TV Series. F.R.I.E.D.S for example
-dir=os.listdir(path)
-list=[]
-for file in dir:
-	list.append(file)
-length=len(sys.argv)
-if(length>1):
-	season=int(sys.argv[1])
-	episode_no=int(sys.argv[2])
-else:
-	season=0
-	episode_no=0	
-if(season):
-	kekrandom=list[season]
-else:
-	kekrandom=random.choice(list)
-path=path+kekrandom
-episode=os.listdir(path)
-list_episodes=[]
-for ep in episode:
-	if(ep.endswith(".mkv")): #Give the file extension here. Important!
-		list_episodes.append(ep)
-if(episode):
-	random=list_episodes[episode_no]
-else:
-	random=random.choice(list_episodes)
-#Give the path of your video player here
-p = subprocess.Popen(["C:/Program Files (x86)/VideoLAN/VLC/vlc.exe","\\"+os.path.join(path,random)])
+import os,random,subprocess,re,glob
+
+path = "/home/bhargav/Desktop/Friends/"
+
+seasons = os.listdir(path)
+
+historyFile = "/home/bhargav/Desktop/history.txt"
+
+def writeToFile(season,episode):
+
+	with open(historyFile,"a+") as file:
+		file.write("Episode " + episode + "\n")
+
+
+def showHistory():
+	print("You recently watched these episodes\n")
+	count = 0
+	if os.path.exists(historyFile):
+		for line in reversed(open(historyFile,"r+").readlines()):
+			count = count + 1
+			if count == 10:
+				break
+			print line.rstrip()
+
+
+
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+def natural_keys(text):
+    
+    return [ atoi(c) for c in re.split('(\d+)', text) ]
+
+def playRandom():
+	
+	global path,seasons
+	season = random.choice(seasons)
+	path = path + season + "/"
+	episodes = os.listdir(path)
+	for file in episodes:
+
+		if file.endswith("mkv") or file.endswith("avi"):
+			continue
+		else:			
+			episodes = [x for x in episodes if x != file]
+
+	episode = random.choice(episodes)
+
+	writeToFile(season,episode)
+
+	subprocess.call(['vlc',path + episode])
+
+def playEpisode():
+	showHistory()
+	global path,seasons
+	season = int(raw_input("Which season?\n"))
+	episode = int(raw_input("Episode?\n"))
+	seasons.sort(key=natural_keys)
+	season = seasons[season - 1]
+	path = path + season + "/"
+	episodes = os.listdir(path)
+	
+	for file in episodes:
+
+		if file.endswith("mkv") or file.endswith("avi"):
+			continue
+		else:
+			episodes = [x for x in episodes if x != file]
+
+	
+	episodes.sort(key=natural_keys)
+	
+	episode = episodes[episode - 1]
+
+	writeToFile(season,episode)
+
+	subprocess.call(['vlc',path + episode])	
+
+choice = int(raw_input("1. Random\n2. Choose episode\n"))
+
+
+
+
+if choice == 1:
+	playRandom()
+
+elif choice == 2:
+	playEpisode()
+
+
+
+
